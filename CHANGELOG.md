@@ -1,5 +1,12 @@
 # 更新记录
 
+## 0.2.1
+
+- 在项目外运行不再像崩溃：`sandpipe` / `run` / `baseline` 找不到 `.sandcastle/sandcastle.config.ts`（或其他没接住的错误）时只打一行 `✗ 提示`、退出码 1，不再先打一整行压缩后的源码和堆栈；要完整堆栈设 `SANDPIPE_DEBUG=1`（e2e A3 发现）
+- `sandpipe onboard` 不在 git 仓库根目录时直接报错、不写任何文件；之前在非 git 目录里会照样生成配置，远端写成 `fatal: not a git repository…`、基线猜成 master（e2e A3 发现）
+- `sandpipe update` 在没接入的目录（没有 `.sandcastle/sandcastle.config.ts`）里报错、不写任何文件；之前会在当前目录建出 `.claude/` 和 `.sandcastle/`（e2e A3 发现）
+- 发版：npm 发布关掉 provenance。源码仓库公开后 npm 会自动生成 provenance，要求 `repository.url` 指向源码仓库，而 `repository` 有意指向 releases 仓库，0.2.0 因此只发到了 GitHub Release、没发到 npm；0.2.0 的内容都在 0.2.1 里
+
 ## 0.2.0
 
 - 英文终端和 PR 评论里等检查的分钟数按单复数写：`up to 1 minute`、`after 1 minute`，不再写成 `1 minutes`（e2e I3 发现）
