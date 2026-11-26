@@ -19,12 +19,26 @@ The pipeline runs these steps in order:
 - podman (on macOS also `podman machine start`)
 - Claude Code credentials: subscribers can generate one with `claude setup-token`
 
+## Before you start
+
+How good Sandcastle's output is depends on how much of your intent is written down. You don't need to have it all ready: onboard helps you fill in what's missing. It writes the gaps it finds to an open questions list (projects onboarded before the list existed get one with `onboard --questions-only`), and you answer them with `/fill-project-docs`.
+
+Project knowledge comes in three kinds:
+
+| Kind | Can it be read from the code? | Who fills it in | Examples |
+|---|---|---|---|
+| Fact | Yes | The onboard agent writes it into PROJECT.md | Directory layout, commands, test framework, services the tests depend on |
+| Convention | Partly | The agent drafts it, a human confirms | Code style, how tests are written, commit conventions |
+| Intent | No | A human, answering in `/fill-project-docs` | Business rules, domain terms, red lines, reasons behind a design |
+
+Tickets that only touch facts (fixing a bug, adding a field the way existing ones are added) work without these docs. Tickets that need intent that isn't written down stop and wait for a human to fill it in.
+
 ## Install
 
 ```bash
 npm i -g sandpipe
 # or
-pnpm add -g sandpipe
+pnpm add -g sandpipe   # first time with pnpm: run `pnpm setup` and reopen the terminal, so its global bin directory is on PATH
 ```
 
 You can also install the package from the GitHub Release: `npm i -g https://github.com/kobe4cn/sandcastle-releases/releases/latest/download/sandpipe.tgz`.
@@ -51,6 +65,8 @@ SANDCASTLE_ONLY=12 sandpipe    # only #12; without it, all labelled tickets are 
 
 New projects only open PRs by default and don't auto-merge (`autoMerge: false`), one ticket at a time. Follow [docs/onboarding-checklist.md](docs/onboarding-checklist.md) through a canary ticket and real small tickets, and loosen the limits once you're confident.
 
+Auto-merge requires both the gate and the checks on the PR to pass. If your CI covers things the gate doesn't, consider adding them to `gate.script`; if your CI is unreliable, set `mergeRequires: { checks: "none" }` (see [docs/config.md](docs/config.md)).
+
 ## Generated files
 
 | File | Purpose |
@@ -60,17 +76,19 @@ New projects only open PRs by default and don't auto-merge (`autoMerge: false`),
 | `.sandcastle/models.json` | Which model each phase (prep / implement / review …) uses |
 | `.sandcastle/.env` | Tokens, not committed |
 | `.sandcastle/Containerfile` | Sandbox image |
-| `.claude/` | Context budget hook, screenshot-viewing subagent, `/prep-ticket` skill |
+| `.claude/` | Context budget hook, screenshot-viewing subagent, `/prep-ticket` and `/fill-project-docs` skills |
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `sandpipe [run]` | Run the pipeline |
-| `sandpipe onboard [--no-agent] [--model <name>] [--lang zh\|en]` | Onboard a new project; existing files are not overwritten |
+| `sandpipe onboard [--no-agent] [--model <name>] [--lang zh\|en]` | Onboard a new project; existing files under `.sandcastle/` are not overwritten, and for this tool's files under `.claude/` that differ from the template it shows the diff and asks to keep, overwrite or save as `.new` (non-interactive: saves `.new`) |
+| `sandpipe onboard --questions-only [--model <name>] [--lang zh\|en]` | Only write the open questions list `.sandcastle/OPEN-QUESTIONS.md`, for projects onboarded before it existed; touches no other file |
 | `sandpipe doctor [--fix]` | Pre-run checks; exit code 1 when anything shows ✗ |
 | `sandpipe baseline` | Run the full gate once against `origin/main`, report only |
-| `sandpipe update` | Refresh this tool's files under `.claude/` to the current version |
+| `sandpipe update` | Refresh this tool's files under `.claude/` to the current version, asking the same way as onboard when one differs from the template; refreshes the global skill too if installed |
+| `sandpipe skill` | Install `/prep-ticket` into `~/.claude/skills/` so it works in repos without sandcastle (it shadows the project copy; `update` refreshes it too) |
 | `sandpipe upgrade` | Install the latest version |
 | `sandpipe --version` | |
 
