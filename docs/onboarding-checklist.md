@@ -18,7 +18,7 @@ Run every command in the target project's root; if the config lives elsewhere, f
   - `gate.script` is a gate you're willing to merge on; consider `integrity` if there are migrations
   - Keep the `autoMerge: false` and `maxParallel: 1` that onboard generated
 - [ ] `cp .sandcastle/.env.example .sandcastle/.env` and fill in the token the pipeline uses (`CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or `ANTHROPIC_API_KEY`); the pipeline reads only this file, independent of your local Claude Code login
-- [ ] Build the image with the command onboard printed at the end (`podman build -t sandcastle:<project> …`)
+- [ ] Build the image with the command from onboard's next steps (`podman build -t sandcastle:<project> …`)
 
 ## 1. doctor passes
 

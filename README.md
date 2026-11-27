@@ -52,7 +52,7 @@ In the project root:
 ```bash
 sandpipe onboard          # detect the project, generate .sandcastle/, let claude read the code and write PROJECT.md
 cp .sandcastle/.env.example .sandcastle/.env    # fill in tokens
-podman build -t sandcastle:<project> -f .sandcastle/Containerfile .sandcastle   # onboard prints the exact command at the end
+podman build -t sandcastle:<project> -f .sandcastle/Containerfile .sandcastle   # the exact command is in onboard's next steps
 sandpipe doctor --fix     # check everything, creating labels along the way
 sandpipe baseline         # run the full gate once against main in a sandbox
 ```
@@ -85,8 +85,8 @@ Auto-merge requires both the gate and the checks on the PR to pass. If your CI c
 | Command | Purpose |
 |---|---|
 | `sandpipe [run]` | Run the pipeline |
-| `sandpipe onboard [--no-agent] [--model <name>] [--lang zh\|en] [--verbose]` | Onboard a new project; existing files under `.sandcastle/` are not overwritten, and for this tool's files under `.claude/` that differ from the template it shows the diff and asks to keep, overwrite or save as `.new` (non-interactive: saves `.new`); the output is a short summary per stage (detect / files / checks), `--verbose` prints the full details |
-| `sandpipe onboard --questions-only [--model <name>] [--lang zh\|en]` | Only write the open questions list `.sandcastle/OPEN-QUESTIONS.md`, for projects onboarded before it existed; touches no other file |
+| `sandpipe onboard [--no-agent] [--model <name>] [--lang zh\|en] [--verbose]` | Onboard a new project; existing files under `.sandcastle/` are not overwritten, and for this tool's files under `.claude/` that differ from the template it shows the diff and asks to keep, overwrite or save as `.new` (non-interactive: saves `.new`); the output is a short summary per stage (detect / files / agent / checks) plus a language line, the agent's notes are saved to `.sandcastle/logs/onboard.md`, `--verbose` prints the full details plus the agent's stderr and notes |
+| `sandpipe onboard --questions-only [--model <name>] [--lang zh\|en] [--verbose]` | Only write the open questions list `.sandcastle/OPEN-QUESTIONS.md`, for projects onboarded before it existed; touches no other file; the agent's stderr and notes print only under `--verbose` |
 | `sandpipe doctor [--fix]` | Pre-run checks; exit code 1 when anything shows ✗ |
 | `sandpipe baseline` | Run the full gate once against `origin/main`, report only |
 | `sandpipe update` | Refresh this tool's files under `.claude/` to the current version, asking the same way as onboard when one differs from the template; refreshes the global skill too if installed |

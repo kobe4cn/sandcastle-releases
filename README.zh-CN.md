@@ -52,7 +52,7 @@ pnpm add -g sandpipe   # 第一次用 pnpm 装全局包：先跑 `pnpm setup` �
 ```bash
 sandpipe onboard          # 探测项目，生成 .sandcastle/，让 claude 读代码写好 PROJECT.md
 cp .sandcastle/.env.example .sandcastle/.env    # 填 token
-podman build -t sandcastle:<项目名> -f .sandcastle/Containerfile .sandcastle   # onboard 最后会打印准确的命令
+podman build -t sandcastle:<项目名> -f .sandcastle/Containerfile .sandcastle   # 准确的命令在 onboard 的「下一步」里
 sandpipe doctor --fix     # 逐项检查，顺带建好标签
 sandpipe baseline         # 在沙箱里对 main 跑一次完整门槛
 ```
@@ -85,8 +85,8 @@ SANDCASTLE_ONLY=12 sandpipe    # 只做 #12；不设就处理全部带标签的�
 | 命令 | 作用 |
 |---|---|
 | `sandpipe [run]` | 跑流水线 |
-| `sandpipe onboard [--no-agent] [--model <名>] [--lang zh\|en] [--verbose]` | 接入新项目，`.sandcastle/` 下已有的文件不覆盖；`.claude/` 下本工具的文件和模板不同时显示差异，问保留、覆盖还是另存为 `.new`（非交互时另存 `.new`）；输出按探测 / 文件 / 校验收成阶段摘要，`--verbose` 打印完整明细 |
-| `sandpipe onboard --questions-only [--model <名>] [--lang zh\|en]` | 只生成缺口清单 `.sandcastle/OPEN-QUESTIONS.md`，给早于清单接入的项目；不动其他文件 |
+| `sandpipe onboard [--no-agent] [--model <名>] [--lang zh\|en] [--verbose]` | 接入新项目，`.sandcastle/` 下已有的文件不覆盖；`.claude/` 下本工具的文件和模板不同时显示差异，问保留、覆盖还是另存为 `.new`（非交互时另存 `.new`）；输出按探测 / 文件 / agent / 校验收成阶段摘要、另有语言一行，agent 的笔记存进 `.sandcastle/logs/onboard.md`，`--verbose` 打印完整明细和 agent 的 stderr 与笔记全文 |
+| `sandpipe onboard --questions-only [--model <名>] [--lang zh\|en] [--verbose]` | 只生成缺口清单 `.sandcastle/OPEN-QUESTIONS.md`，给早于清单接入的项目；不动其他文件；agent 的 stderr 与笔记全文只在 `--verbose` 打 |
 | `sandpipe doctor [--fix]` | 跑之前的检查；有 ✗ 时退出码为 1 |
 | `sandpipe baseline` | 对 `origin/main` 跑一次完整门槛，只报告 |
 | `sandpipe update` | 把 `.claude/` 下本工具的文件刷成当前版本，和模板不同的按 onboard 的规则询问；装过全局 skill 的话一起刷新 |

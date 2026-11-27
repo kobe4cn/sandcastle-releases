@@ -1,5 +1,11 @@
 # 更新记录
 
+## 0.3.2
+
+- onboard 输出加语言一行、精简「下一步」，`--lang en` 时全英文：校验之后打一行语言（纯函数 `languageSource`、`languageLine`），写明当前输出语言怎么定的（`SANDPIPE_LANG` / `--lang` / 按提交信息判断 / 提交太少按文档或默认）和怎么换；终端按 `SANDPIPE_LANG`、生成的文件按 `--lang`，两者不一致时把终端和文件分别写清楚。「下一步」每步一行只写要敲的命令或要做的动作，上线清单（baseline → 金丝雀 → 小票 → 自动合并）只给一个链接；`.env` 一步压短但仍写明流水线用 `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` 生成）或 `ANTHROPIC_API_KEY`、与本机 Claude Code 登录无关；`--questions-only` 的「接下来」同风格；没设 `SANDPIPE_LANG` 时 `--lang en` 让整段终端输出都是英文（README 中英、接入检查清单中英同步）（closes #98）
+- onboard 的 agent 段收成摘要：开始一行（沿用凭据说明，`agentStartHint`）、完成一行（新增纯函数 `agentDoneLine`：doc 写「完成，笔记见 .sandcastle/logs/onboard.md」，questions 写「完成」）；claude 的 stderr 和 agent 笔记全文只在 `--verbose` 打（stderr 末尾几行照收进失败警告），`--questions-only` 的输出同样收拢、也认 `--verbose`；agent 失败（没装 claude、非零退出、超时、超上限）的警告照旧单独成醒目一行（`src/onboard.ts` 的 `runAgent` 加 `verbose` 参数，`questionsOnlyRun`、onboard 的 agent 段；src/cli.ts 中英 help、README 中英命令表、DEVELOPMENT.md 同步）（closes #97）
+- 给 agent 的提示词和 prep-ticket skill 写明 `## Blocked by` 的写法：每个 blocker 单独写一行列表项 `- #n`，列表项外的票号（说明段落、续行、括号里）不算，与 `blockersOf` 只认列表项（#99）的解析对齐；`prompts/prep.md`「上下文不够」一段原先写「每张子票都写 `## Blocked by #{{TASK_ID}}`」，票号写在标题行上、解析时整行被吃掉，这个 blocker 一直没生效，改成标题下单独一行 `- #{{TASK_ID}}`（`prompts/prep.md`、`prompts/decisions.md`、`prompts/ticket-sizing.md`、`claude/skills/prep-ticket/SKILL.md`；docs/internal/ticket-sizing.md 同步）（closes #100）
+
 ## 0.3.1
 
 - onboard 的终端输出收成阶段摘要：探测两行（项目 / 平台 / 基线，门槛 / 受保护路径条数 / 有无网页界面）、文件一行计数（「新建 N 个，跳过 M 个（已存在）」）、校验一行（PROJECT.md 是否通过、缺口清单条数）；要人处理的（另存为 `.new` 的冲突文件、PROJECT.md 校验失败、GitLab 警告）仍在摘要之外各自单独成醒目的一行。新增 `sandpipe onboard --verbose` 打出完整明细（各命令、受保护路径的正则、逐个文件的状态行、缺口清单明细），README 中英命令表同步（纯函数 `detectSummary`、`filesSummary`、`validationSummary`，`src/onboard.ts`）（closes #96）

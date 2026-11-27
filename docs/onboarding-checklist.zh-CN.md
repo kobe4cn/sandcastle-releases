@@ -18,7 +18,7 @@
   - `gate.script` 就是你愿意据此合并的门槛；有迁移时考虑配 `integrity`
   - 保持 onboard 生成的 `autoMerge: false`、`maxParallel: 1`
 - [ ] `cp .sandcastle/.env.example .sandcastle/.env`，填好流水线用的 token（`CLAUDE_CODE_OAUTH_TOKEN`，`claude setup-token` 生成，或 `ANTHROPIC_API_KEY`）；流水线只用这里面的 token，与本机 Claude Code 登录无关
-- [ ] 按 onboard 最后打印的命令建镜像（`podman build -t sandcastle:<项目> …`）
+- [ ] 按 onboard「下一步」里的命令建镜像（`podman build -t sandcastle:<项目> …`）
 
 ## 1. doctor 全过
 
