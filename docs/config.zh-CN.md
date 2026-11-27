@@ -42,12 +42,14 @@ export default defineProject({
 | `gate.script({ baseRef })` | 合并门槛，在沙箱里用 `sh -c` 跑，退出码 0 算通过 |
 | `gate.testFile` | 测试文件路径的正则，用来从门槛输出里认出失败的文件 |
 | `gate.typecheck` | 等人审的 PR rebase 之后只跑这条命令 |
+| `gate.services` | 可选。门槛依赖的服务，`[{ name, host, port }]`（比如 `[{ name: "postgres", host: "localhost", port: 5432 }]`）。`sandpipe run` 启动时逐个用 TCP 连一次，有连不上的就报错退出，写明服务名和 `host:port`；`sandpipe doctor` 每个服务输出一行 ok / fail。`host` 写宿主机能直连的地址 |
 
 门槛脚本的输出约定（可选，用来按依赖选测试、识别偶发失败）：
 
 - 输出一行 `GATE_TIER: selected …`，表示只跑了按依赖选出的测试；没有这一行就算完整测试。
 - 环境变量 `GATE_FULL=1` 时必须跑完整测试（`baseline` 和 main 上的兜底检查会设）。
 - 失败的文件单独重跑后通过时，输出 `GATE_FLAKY`。它前面列出重跑过的文件，后面是第一次失败的摘要。流水线会为这些文件开 `flaky` 票。
+- 门槛依赖的服务连不上时（退出码非 0，且输出某一行命中 `ECONNREFUSED`、`getaddrinfo ENOTFOUND` / `EAI_AGAIN`、`Cannot connect to the Docker daemon` / `Cannot connect to Podman`），终端打出那一行，不开 fix 会话、不算失败，稍后整步重跑；重试用完仍连不上就打 stuck，评论写明那一行。项目自己的连接类报错用可选的 `gate.envErrorPattern`（正则，比如 `/MongoServerSelectionError/`）追加。`No test files found` 和普通的断言失败不算。
 - 输出按纯文本逐行解析，ANSI 转义码会被去掉。门槛默认设了 `NO_COLOR=1` / `FORCE_COLOR=0`，想要颜色就在 `gate.env` 里设 `NO_COLOR: ""`；门槛脚本自己 grep 失败行时不要依赖颜色码。
 
 ## 隔离辅助函数
@@ -63,7 +65,9 @@ export default defineProject({
 
 ## 浏览器验收
 
-有网页界面的项目，PROJECT.md 写了「浏览器验收」一节，agent 才会在沙箱里起 dev server、用浏览器点一遍改过的页面；没有这一节（只有 HTML 注释也算没有），改页面的票只能留 PR 给人看，`sandpipe doctor` 会警告。
+有网页界面的项目，PROJECT.md 写了「浏览器验收」一节，agent 才会在沙箱里起 dev server、用浏览器点一遍改过的页面；没有这一节（只有 HTML 注释也算没有），改页面的票只能留 PR 给人看；探测到网页界面或配了 `browser.pagePaths` 时，`sandpipe run` 启动时和 `sandpipe doctor` 都会警告。配了这一节，改了页面的票（diff 命中 `browser.pagePaths`、有 `.browser-check/`、或 reviewer 的 `browser-check` 是 `done` / `missing`）要自动合并还得满足：至少一张截图；`RESULT.md` 存在、列表 / 表格行里没有 ❌ / ⚠、引用的截图文件都在；reviewer 的 `browser-check` 是 `done`（reviewer 要自己看截图、对照票的 Browser check 逐条给出 `<browser-verdict>`，逐条全 ✅ 且与 `RESULT.md` 一致才给 `done`），且 reviewer 的逐条 `browser-verdict` 存在、没有 ❌ / ❓ 行（给了 `done` 却没有逐条结论、或有这样的行，即使 `RESULT.md` 全 ✅ 也挡）。缺哪条就留 PR，终端和 PR 评论逐条写出来。验收在 implement 结束时记下当时的提交：之后 revise / fix 改了命中 `browser.pagePaths` 的文件（从那个提交到 HEAD 的 diff），截图已过期，留 PR；恢复路径（没记提交）或取不到这段 diff 时也按过期处理。rebase 补救里 agent 解冲突改到了页面（冲突文件加上新出现在 diff 里的文件）时不 push、留 PR。改动没碰页面时旧的验收照常有效。不会自动重做浏览器验收，由人重新验收。改了页面但票的实现指引里没有 `- **Browser check**` 一项时，PR 的 Browser check 一节和一条 PR 评论会提示补 prep 规则。PR 的 Browser check 一节先写评审结论（reviewer 的 `<browser-verdict>`，没给时写明），再写 implement 自评（`RESULT.md`）。
+
+onboard 生成的 Containerfile 不管有没有网页界面都装好 playwright-cli 和 Chromium。onboard 会先读项目已有的验收资料（README、测试说明、旧的 `.sandcastle` 提示词、`scripts/` 里建验收数据的脚本），能拼出下面四步就写这一节，拼不全就把缺的信息（dev server 启动命令与端口、验收数据怎么建、登录方式与账号、dev server 要的变量）列进缺口清单。后端项目加了前端：在 PROJECT.md 加浏览器验收一节（照下面的示例），并配 `browser.pagePaths`（见「可选」），沙箱已经装好浏览器。
 
 - **dev server 要的变量放进 `isolation.env`**：dev server 在沙箱里读的变量（数据库、会话密钥、对象存储等）都要出现在 `isolation.env` 的返回值里，少一个就起不来。用上一节的 `readHostEnv` 从宿主机 env 文件读出来，指向本机服务的值过一遍 `toContainerHost`。
 - **用独立的库**：和测试一样，库名用 `withDbSuffix` 加上 `` `_i${runId}` `` 后缀，验收数据不会碰到开发库，也不会和并行的票互相清表（写法见开头的示例）。
@@ -98,10 +102,13 @@ export default defineProject({
 | `agentIdleTimeoutS` | 2400 | agent 多久没输出算卡死 |
 | `pollIntervalMs` / `maxIdlePolls` | 10 分钟 / 12 | 调度间隔；连续空转多少次后结束 |
 | `labels` | 见下 | 改标签名 |
-| `sandbox(env)` | podman | 换沙箱实现（`@ai-hero/sandcastle` 的 SandboxProvider） |
+| `sandbox(env)` | podman | 换沙箱实现（`@ai-hero/sandcastle` 的 SandboxProvider）。`env` 要原样传进容器：里面把 Claude 凭据清空，别家档案的会话才读不到 |
 | `integrity` | 无 | 合并前的一致性检查：`{ name, command(head, baseRef), broken(baseRef) }`。比如检查数据库迁移链有没有分叉：rebase 没有文本冲突，迁移链也可能断 |
 | `appendOnlyFiles` | `[]` | 只追加的索引文件。几张票同时追加不算改同一个文件，可以并行 |
 | `acceptancePrep(branch)` | 无 | 改了页面的票，PR「验收说明」最前面固定的准备步骤 |
+| `browser.pagePaths` | `[]` | 页面文件路径（相对仓库根）的正则数组，如 `[/^app\/routes\//]`；票改到匹配的文件算「改了页面」。onboard 按探测到的前端框架（next、remix / react-router、nuxt / vue、svelte、astro，其它有网页界面的项目按 `src/` 下的 tsx / jsx / vue / svelte / css）写默认值，没有网页界面不写 |
+| `protectedPaths` | `[]` | 受保护路径（相对仓库根、不带前导 `/`，和 `git diff --name-only` 的输出一致）的正则数组，如 `[/^\.github\//, /^migrations\//]`。票的最终 diff（review / 打回 / fix 之后）改到命中的文件就不自动合并，留 PR，评论逐条列出「文件 — 命中的规则」；rebase 时 agent 解过冲突的，push 前重取 diff 再查一次。配了规则但取不到 diff 时也留 PR。票的实现指引里写一项 `- **Protected**: \`path\`, \`dir/\``（相对仓库根，`/` 结尾表示目录下所有文件，否则与 diff 里的文件全等）可以放行这些文件：被允许的命中不挡合并，PR 正文多一节 `## Protected paths` 标出来（已有 PR 时出现在更新评论里；rebase 解冲突后新改到的放行文件另发一条评论）。开头的 `./`、`/` 会去掉；因受保护路径留 PR 时，评论会列出一个文件都没匹配上的放行项。`onboard` 按探测结果写默认值：有快照（`__snapshots__/` 或 `.snap`）写 `/(^\|\/)__snapshots__\//`、`/\.snap$/`，有 Playwright 快照目录写 `/-snapshots\//`，有 `.github/workflows/` 写 `/^\.github\/workflows\//`，探测到迁移目录写 `/^<目录>\//`，都没有就不写；`sandpipe doctor` 列出当前的规则。lockfile 不进默认值（加依赖的票都会改它），需要的项目自己加（见 `docs/adr/0003-protected-paths.md`） |
+| `trustedAuthors` | `[]` | 额外视为可信的票作者登录名，例如没装成 GitHub App 的机器人账号。票作者是机器人、在这个名单里、或在仓库有 admin / write 权限（maintain 算 write）才算可信；不可信、又没有 `sandcastle:trusted` 的票不 prep、不开工，打 `needs-triage` 并评论一次。评论里的标记（代拍板、评审已过、reprep、限额等待）和 PR 上的 `/sandcastle`、Request changes 也只认可信作者的。agent 在沙箱里读评论只看 `author_association` 是 OWNER / MEMBER / COLLABORATOR 或机器人的，不看这个名单 |
 | `beforeSchedule()` | 无 | 每次调度开头在宿主机上跑的维护 |
 | `texts` | 通用版 | 自动开的票和内联提示词的正文 |
 
@@ -112,10 +119,14 @@ export default defineProject({
 | `Sandcastle` | 人工选中，流水线只处理带这个标签的票 |
 | `sandcastle:prepped` | prep 已确认可以实现 |
 | `sandcastle:pr-open` | 已开 PR，等人审 |
+| `sandcastle:reviewed` | 评审已通过、正在跑门槛；运行被中断后，分支没变就直接跑门槛，不重新实现和评审。流水线第一次用到时自己建 |
+| `sandcastle:merging` | 已开 PR、门槛已过，在等检查 / 合并；运行被中断后，下次运行接着等，不重新实现。流水线第一次用到时自己建 |
 | `sandcastle:stuck` | 需要人介入，原因写在 issue 评论里 |
 | `sandcastle:decided` | agent 替人拍板过设计决定，等人事后确认，看过后去掉 |
 | `flaky` | 门槛里重跑才通过的测试，流水线自动开票 |
 | `sandcastle:main-broken` | main 上的兜底完整测试失败，流水线自动开票，排在最前 |
 | `ready-for-agent` / `ready-for-human` | 拆票后的分流 |
+| `needs-triage` | 票的作者没有写权限，等有写权限的人确认（`labels.needsTriage`）。流水线第一次用到时自己建 |
+| `sandcastle:trusted` | 有写权限的人确认过这张票可以交给 Sandcastle（`labels.trusted`；打标签至少要 triage 权限）。流水线第一次用到时自己建 |
 
 `sandpipe doctor --fix` 会建好缺的标签。
