@@ -17,7 +17,7 @@
     - 有网页界面时，PROJECT.md 要有「浏览器验收」，dev server 要的变量也要在 `isolation.env` 里（用独立的库），写法见 [config 的「浏览器验收」](config.zh-CN.md#浏览器验收)；没有这一节 `sandpipe doctor` 会警告；onboard 拼不全时会把缺的信息列进缺口清单。沙箱镜像不管有没有网页界面都装了浏览器，后来加前端只需补这一节
   - `gate.script` 就是你愿意据此合并的门槛；有迁移时考虑配 `integrity`
   - 保持 onboard 生成的 `autoMerge: false`、`maxParallel: 1`
-- [ ] `cp .sandcastle/.env.example .sandcastle/.env`，填好 token
+- [ ] `cp .sandcastle/.env.example .sandcastle/.env`，填好流水线用的 token（`CLAUDE_CODE_OAUTH_TOKEN`，`claude setup-token` 生成，或 `ANTHROPIC_API_KEY`）；流水线只用这里面的 token，与本机 Claude Code 登录无关
 - [ ] 按 onboard 最后打印的命令建镜像（`podman build -t sandcastle:<项目> …`）
 
 ## 1. doctor 全过

@@ -57,6 +57,8 @@ sandpipe doctor --fix     # check everything, creating labels along the way
 sandpipe baseline         # run the full gate once against main in a sandbox
 ```
 
+Two unrelated credentials are involved: `sandpipe onboard` completes `.sandcastle/PROJECT.md` by running `claude -p` locally under your own Claude Code login, while the pipeline's sandboxed agents use only `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) or `ANTHROPIC_API_KEY` in `.sandcastle/.env`. A local login-expiry warning doesn't affect the pipeline.
+
 Then label issues with `Sandcastle` and run:
 
 ```bash
@@ -83,7 +85,7 @@ Auto-merge requires both the gate and the checks on the PR to pass. If your CI c
 | Command | Purpose |
 |---|---|
 | `sandpipe [run]` | Run the pipeline |
-| `sandpipe onboard [--no-agent] [--model <name>] [--lang zh\|en]` | Onboard a new project; existing files under `.sandcastle/` are not overwritten, and for this tool's files under `.claude/` that differ from the template it shows the diff and asks to keep, overwrite or save as `.new` (non-interactive: saves `.new`) |
+| `sandpipe onboard [--no-agent] [--model <name>] [--lang zh\|en] [--verbose]` | Onboard a new project; existing files under `.sandcastle/` are not overwritten, and for this tool's files under `.claude/` that differ from the template it shows the diff and asks to keep, overwrite or save as `.new` (non-interactive: saves `.new`); the output is a short summary per stage (detect / files / checks), `--verbose` prints the full details |
 | `sandpipe onboard --questions-only [--model <name>] [--lang zh\|en]` | Only write the open questions list `.sandcastle/OPEN-QUESTIONS.md`, for projects onboarded before it existed; touches no other file |
 | `sandpipe doctor [--fix]` | Pre-run checks; exit code 1 when anything shows ✗ |
 | `sandpipe baseline` | Run the full gate once against `origin/main`, report only |

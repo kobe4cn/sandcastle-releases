@@ -112,6 +112,10 @@ onboard 生成的 Containerfile 不管有没有网页界面都装好 playwright-
 | `beforeSchedule()` | 无 | 每次调度开头在宿主机上跑的维护 |
 | `texts` | 通用版 | 自动开的票和内联提示词的正文 |
 
+## 模型
+
+每个阶段用哪些档案写在 `.sandcastle/models.json`（每个阶段一个有序的档案列表、撞限额时换下一个，档案带 model、effort、env；当前的选择看 `sandpipe doctor`）。无论哪个档案，沙箱里的每条 claude 命令都关掉了 Claude Code 自带的提交 / PR 署名：`--settings '{"includeCoAuthoredBy":false,"attribution":{"commit":"","pr":""}}'`，优先级高于项目自己的 `.claude/settings.json`，在那里改不回来。提交和 PR 因此不带模型名的 `Co-Authored-By` 署名；不这么做的话，别家档案（把 `opus` 经 `ANTHROPIC_BASE_URL` 转到别家）的提交仍会被署名成 Anthropic 的模型，因为 Claude Code 只看得到别名。各阶段实际用的档案 / 模型记在 PR 正文的 Usage 表里。
+
 ## 标签
 
 | 默认名 | 含义 |

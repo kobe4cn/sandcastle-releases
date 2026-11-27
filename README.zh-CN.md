@@ -57,6 +57,8 @@ sandpipe doctor --fix     # 逐项检查，顺带建好标签
 sandpipe baseline         # 在沙箱里对 main 跑一次完整门槛
 ```
 
+这里涉及两套凭据，互不相干：`sandpipe onboard` 补全 `.sandcastle/PROJECT.md` 时在本机跑 `claude -p`，用的是你本机 Claude Code 的登录；流水线在沙箱里只用 `.sandcastle/.env` 里的 `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` 生成）或 `ANTHROPIC_API_KEY`。所以本机登录过期的提醒不影响流水线。
+
 然后给 issue 打上 `Sandcastle` 标签，运行：
 
 ```bash
@@ -83,7 +85,7 @@ SANDCASTLE_ONLY=12 sandpipe    # 只做 #12；不设就处理全部带标签的�
 | 命令 | 作用 |
 |---|---|
 | `sandpipe [run]` | 跑流水线 |
-| `sandpipe onboard [--no-agent] [--model <名>] [--lang zh\|en]` | 接入新项目，`.sandcastle/` 下已有的文件不覆盖；`.claude/` 下本工具的文件和模板不同时显示差异，问保留、覆盖还是另存为 `.new`（非交互时另存 `.new`） |
+| `sandpipe onboard [--no-agent] [--model <名>] [--lang zh\|en] [--verbose]` | 接入新项目，`.sandcastle/` 下已有的文件不覆盖；`.claude/` 下本工具的文件和模板不同时显示差异，问保留、覆盖还是另存为 `.new`（非交互时另存 `.new`）；输出按探测 / 文件 / 校验收成阶段摘要，`--verbose` 打印完整明细 |
 | `sandpipe onboard --questions-only [--model <名>] [--lang zh\|en]` | 只生成缺口清单 `.sandcastle/OPEN-QUESTIONS.md`，给早于清单接入的项目；不动其他文件 |
 | `sandpipe doctor [--fix]` | 跑之前的检查；有 ✗ 时退出码为 1 |
 | `sandpipe baseline` | 对 `origin/main` 跑一次完整门槛，只报告 |

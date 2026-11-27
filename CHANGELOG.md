@@ -1,5 +1,13 @@
 # 更新记录
 
+## 0.3.1
+
+- onboard 的终端输出收成阶段摘要：探测两行（项目 / 平台 / 基线，门槛 / 受保护路径条数 / 有无网页界面）、文件一行计数（「新建 N 个，跳过 M 个（已存在）」）、校验一行（PROJECT.md 是否通过、缺口清单条数）；要人处理的（另存为 `.new` 的冲突文件、PROJECT.md 校验失败、GitLab 警告）仍在摘要之外各自单独成醒目的一行。新增 `sandpipe onboard --verbose` 打出完整明细（各命令、受保护路径的正则、逐个文件的状态行、缺口清单明细），README 中英命令表同步（纯函数 `detectSummary`、`filesSummary`、`validationSummary`，`src/onboard.ts`）（closes #96）
+- 沙箱里所有阶段（含 resume 会话）的 claude 命令统一带 `--settings '{"includeCoAuthoredBy":false,"attribution":{"commit":"","pr":""}}'`，关掉 Claude Code 自带的提交 / PR 署名：第三方后端档案（如 glm）实现的提交不再被署名成 Anthropic 的模型（如 Claude Opus 5.5），提交一律不署模型名，各阶段实际用的档案看 PR 正文的 Usage 表；`--settings` 优先级高于项目 `.claude/settings.json`，升级 sandpipe 即生效、不用重新 onboard（`src/models.ts` 的 `NO_ATTRIBUTION_SETTINGS`、`agentFor`；docs/config 中英新增「模型 / Models」一节）（closes #94）
+- `## Blocked by` 只认列表项（`- `、`* `、`1. ` 开头）里的票号：列表后面不带列表标记的行（说明段落、署名、单独一行的 `#12`）不再算 blocker，免得人随手补一句关联票（比如「属于 #77。」）就让整张票一直排不上（`src/guide.ts` 的 `blockersOf`；doctor 的 Blocked by 检查与调度随之生效）（closes #99）
+- README 中英「Onboard a project / 接入一个项目」一节各补一段：onboard 补全 PROJECT.md 用本机 Claude Code 的登录，流水线只用 `.sandcastle/.env` 里的 `CLAUDE_CODE_OAUTH_TOKEN` 或 `ANTHROPIC_API_KEY`，两者互不相干（closes #91）
+- onboard 起 agent 时写清楚用的哪套凭据：提示写明在本机用 `claude -p` 跑、用的是本机 Claude Code 登录的账号（不是 `.sandcastle/.env` 里的 token）；claude 的 stderr 改为按行加 `[claude]` 前缀转写到终端（半行缓冲到换行或结束），失败（非零退出、30 分钟超时、没装 claude、输出超上限）时的警告带退出码 / 原因和 stderr 最后几行，不再吞掉 claude 自己的报错（`runAgent` 从 `execFileSync` 改成 `spawn`，纯函数 `prefixLines`、`agentFailureMessage`、`agentStartHint`、`envStepHint`，`src/onboard.ts`）；结束「下一步」里填 `.env` 的一步写明流水线用的是其中的 `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` 生成）或 `ANTHROPIC_API_KEY`，与本机 Claude Code 登录无关，接入检查清单中英同步（closes #90）
+
 ## 0.3.0
 
 - 浏览器验收门槛要求评审的逐条结论：改了页面的票，评审给了 `<browser-check>done</browser-check>` 但 `<browser-verdict>` 缺失或为空时留 PR（「review 给了 browser-check done，但没有逐条的 browser-verdict」）；逐条结论里有行首为 ❌ / ❓ 的条目时也留 PR，列出这些行，即使 `RESULT.md` 全 ✅。只机械看行首，不比对 `RESULT.md` 的步骤。评审结论随 `sandcastle:reviewed` 标记评论的 JSON（`browserVerdict`）持久化，恢复路径读回来参与门槛；旧评论没有这个字段时照常解析、按缺失挡下（fail-closed）（closes #84）

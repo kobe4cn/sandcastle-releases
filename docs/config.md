@@ -112,6 +112,10 @@ Example (replace the commands, port and accounts with the project's own):
 | `beforeSchedule()` | none | Maintenance run on the host at the start of every scheduling pass |
 | `texts` | generic | Bodies of auto-opened tickets and inline prompts |
 
+## Models
+
+Which profile each phase uses lives in `.sandcastle/models.json` (an ordered profile list per phase with fallback on usage limits, and each profile's model, effort and env; `sandpipe doctor` shows the current picks). Whatever the profile, every `claude` invocation in the sandbox is launched with Claude Code's built-in commit / PR attribution turned off: `--settings '{"includeCoAuthoredBy":false,"attribution":{"commit":"","pr":""}}'`, which outranks the project's own `.claude/settings.json`, so it can't be turned back on there. Commits and PRs therefore carry no model-name `Co-Authored-By` trailer; without this, a third-party profile — one routing `opus` through `ANTHROPIC_BASE_URL` to another vendor — would still be attributed to an Anthropic model, because Claude Code only sees the alias. Which profile / model each phase actually used is recorded in the PR body's Usage table.
+
 ## Labels
 
 | Default name | Meaning |

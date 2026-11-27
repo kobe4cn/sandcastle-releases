@@ -17,7 +17,7 @@ Run every command in the target project's root; if the config lives elsewhere, f
     - With a web UI, PROJECT.md needs a Browser check section and the dev server's variables must be in `isolation.env` (with a separate database); see [Browser check in config](config.md#browser-check). Without it `sandpipe doctor` warns; when onboard can't piece it together it lists the missing details in the open questions list. The sandbox image has the browser whether or not there's a web UI, so a frontend added later only needs this section
   - `gate.script` is a gate you're willing to merge on; consider `integrity` if there are migrations
   - Keep the `autoMerge: false` and `maxParallel: 1` that onboard generated
-- [ ] `cp .sandcastle/.env.example .sandcastle/.env` and fill in the tokens
+- [ ] `cp .sandcastle/.env.example .sandcastle/.env` and fill in the token the pipeline uses (`CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or `ANTHROPIC_API_KEY`); the pipeline reads only this file, independent of your local Claude Code login
 - [ ] Build the image with the command onboard printed at the end (`podman build -t sandcastle:<project> …`)
 
 ## 1. doctor passes
