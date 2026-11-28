@@ -1,5 +1,14 @@
 # 更新记录
 
+## 0.3.4
+
+- 主动通知（四，#63 之一）：通知里的票带上链接——GitHub forge 实现了可选的 `issueUrl`（`src/forges/github.ts`）：第一次用到时用 `gh repo view --json url` 探一次仓库链接并缓存（url 自带 host，GHE 也适用），gh 报错或输出为空时也缓存下来、返回 undefined 不抛错（通知照旧只带 `#N`），以后不再重试；`Forge.issueUrl` 的返回类型相应改为 `string | undefined`，8 处调用方不用改（closes #135）
+
+- `sandpipe doctor` 新增「通知」检查：没配 notify webhook 时 ✓「未配置，不发通知」；配了时发一次 HEAD 看能不能连上——收到任何 HTTP 响应（哪怕 405）都算 ✓，网络错误 / 超时只 ⚠ 不挡运行（通知是可选的），detail / fix 里不出现 URL（URL 不合法时错误消息带出来的也先抹掉）。`sandpipe doctor --notify-test` 改为发一条 `test` 事件的测试消息（用 #132 的 notifier，中英按 `language`，2xx ✓、其他 ⚠，`--fix` 时不发、只做连通检查），cli 帮助中英写上 `--notify-test`（`src/doctor.ts` 的 diagnose 加 `notifyFetch` / `notifyTest`，`src/notify.ts` 的 `NotifyEvent` 加 `test`，`src/i18n.ts` 加 `notifyTest`；docs/config 中英、docs/internal、DEVELOPMENT.md 同步）（closes #134）
+
+- 主动通知（二，#63 之一）：main 兜底完整测试失败（`src/main.ts` 的 `runMainFullCheck`：新开 main-broken 票和在已有票上追加评论都发，票号用对应的票，原因只写失败的短 sha）、一个阶段的全部档案撞限额进入等待（`limitedComment`：和限额评论一起去重，评论被跳过就不发，同一次等待只发一条、重启后不重复）、prep 撞限额（每个进程一条，任一张票的 prep 正常返回后重置）、prep 会话正常结束后票新带 stuck（`schedule` 的 prep 循环：查一次标签，查询失败只警告）时也向 webhook POST 一条 JSON（事件分别是 `mainBroken` / `limited` / `stuck`）；`run` 异常退出（`src/cli.ts` 顶层 catch）在退出前发 `crashed`（原因取错误第一行，最多等 10 秒，发不出去照常退出码 1）——cli 不加载项目配置，只认默认变量名 `SANDPIPE_NOTIFY_WEBHOOK`，自定义了 `notify.env` 的项目异常退出时收不到（docs/config 中英同步）（closes #133）
+- 主动通知（一，#63 之一）：新增可选配置 `notify`（`notify.env`，默认 `SANDPIPE_NOTIFY_WEBHOOK`），URL 从 `.sandcastle/.env` 读（值为空时取宿主机同名环境变量，没配时什么都不发）。票打 stuck、留 PR 给人时向 webhook POST 一条 JSON：`text` 是给人看的一行（Slack incoming webhook 直接认；飞书、企业微信、钉钉的群机器人要各自的格式，不兼容），`event` / `issue` / `url` / `reason` 给自建接收端；forge 实现了可选的 `issueUrl` 时带链接，中英按 `language`。发送失败只打一行警告、不阻塞主流程，URL 不进日志，且在所有沙箱的 env 里清空、agent 拿不到（`src/notify.ts` 的 `readNotifyUrl` / `createNotifier`；GitHub 的 `issueUrl` 见 #135）（closes #132）
+
 ## 0.3.3
 
 - 复审更严：改动新引入 fail-open（本该留给人审、或本该被关卡拦下的 PR / 票会因为这次改动——残留标签、提前去掉的状态、出错时放行的分支——被自动合并、绕过关卡）时结论一律是 `revise`，实现指引或票写「本票不处理」、按设计决定收窄范围推迟到后续票也不放过，`<revise>` 里写怎么改成 fail-closed（拿不准就留 PR、去掉会放行的状态）；只有这次改动之前就存在的 fail-open 照旧写进「需要人判断」交给人（`prompts/review.md` 的「执行」一节和 `<verdict>revise</verdict>` 定义，docs/internal/sandcastle.md 的「reviewer 打回」同步）（closes #129）
