@@ -52,8 +52,7 @@ pnpm add -g sandpipe   # 第一次用 pnpm 装全局包：先跑 `pnpm setup` �
 ```bash
 sandpipe onboard          # 探测项目，生成 .sandcastle/，让 claude 读代码写好 PROJECT.md
 cp .sandcastle/.env.example .sandcastle/.env    # 填 token
-podman build -t sandcastle:<项目名> -f .sandcastle/Containerfile .sandcastle   # 准确的命令在 onboard 的「下一步」里
-sandpipe doctor --fix     # 逐项检查，顺带建好标签
+sandpipe doctor --fix     # 逐项检查，顺带建好标签和镜像（第一次建镜像要几分钟）
 sandpipe baseline         # 在沙箱里对 main 跑一次完整门槛
 ```
 

@@ -52,8 +52,7 @@ In the project root:
 ```bash
 sandpipe onboard          # detect the project, generate .sandcastle/, let claude read the code and write PROJECT.md
 cp .sandcastle/.env.example .sandcastle/.env    # fill in tokens
-podman build -t sandcastle:<project> -f .sandcastle/Containerfile .sandcastle   # the exact command is in onboard's next steps
-sandpipe doctor --fix     # check everything, creating labels along the way
+sandpipe doctor --fix     # check everything, creating labels and the image along the way (the first image build takes a few minutes)
 sandpipe baseline         # run the full gate once against main in a sandbox
 ```
 

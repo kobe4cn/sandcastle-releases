@@ -128,9 +128,12 @@ onboard 生成的 Containerfile 不管有没有网页界面都装好 playwright-
 | `sandcastle:stuck` | 需要人介入，原因写在 issue 评论里 |
 | `sandcastle:decided` | agent 替人拍板过设计决定，等人事后确认，看过后去掉 |
 | `flaky` | 门槛里重跑才通过的测试，流水线自动开票 |
-| `sandcastle:main-broken` | main 上的兜底完整测试失败，流水线自动开票，排在最前 |
+| `sandcastle:main-broken` | main 上的兜底完整测试失败，流水线自动开票，排在最前；开着时其他票不自动合并、留 PR 等修好（ADR 0007） |
+| `sandcastle:waiting-main` | 被 main-broken 挡住留 PR 的票；main 修好后自动 rebase、重跑门槛再合并（ADR 0007）。流水线第一次用到时自己建 |
 | `ready-for-agent` / `ready-for-human` | 拆票后的分流 |
 | `needs-triage` | 票的作者没有写权限，等有写权限的人确认（`labels.needsTriage`）。流水线第一次用到时自己建 |
 | `sandcastle:trusted` | 有写权限的人确认过这张票可以交给 Sandcastle（`labels.trusted`；打标签至少要 triage 权限）。流水线第一次用到时自己建 |
 
-`sandpipe doctor --fix` 会建好缺的标签。
+`sandpipe doctor --fix` 会建好缺的标签，并按 Containerfile 建好缺的镜像。
+
+镜像构建时把 Containerfile 文件字节的 sha256 记在 `sandpipe.containerfile` label 上。label 与当前 Containerfile 对不上——包括没打过 label 的老镜像——时镜像算过期：`sandpipe doctor` 该项报 ⚠「Containerfile 改过，镜像过期」，`sandpipe doctor --fix` 按当前 Containerfile 重建。`sandpipe run` 启动时发现过期也用 ⚠ 警告一次、不挡运行（镜像不存在时不在这里报）。
