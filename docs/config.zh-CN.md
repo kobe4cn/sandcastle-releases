@@ -101,9 +101,10 @@ onboard 生成的 Containerfile 不管有没有网页界面都装好 playwright-
 | `contextBudget` | 150000 | 单个会话的上下文预算（token） |
 | `agentIdleTimeoutS` | 2400 | agent 多久没输出算卡死 |
 | `pollIntervalMs` / `maxIdlePolls` | 10 分钟 / 12 | 调度间隔；连续空转多少次后结束 |
+| `preflight.minFreeGb` | 5 | 磁盘预检的阈值：工作目录和容器存储（podman 的 GraphRoot）的最低剩余空间（GB）。`sandpipe doctor` 各查一行：够 ✓ 写剩余；低于阈值 ✗ 写剩余 / 阈值，fix 给清理命令（`podman image prune`、`podman system prune`、`git worktree prune`）；量不到只 ⚠（比如 macOS 的 podman machine 下 GraphRoot 在虚拟机里，宿主机上量不到）。配置里自定义了 `sandbox` 时不查容器存储。`sandpipe run` 每轮也查，不够时暂停开新会话 |
 | `labels` | 见下 | 改标签名 |
 | `sandbox(env)` | podman | 换沙箱实现（`@ai-hero/sandcastle` 的 SandboxProvider）。`env` 要原样传进容器：里面把 Claude 凭据清空，别家档案的会话才读不到 |
-| `notify.env` | `SANDPIPE_NOTIFY_WEBHOOK` | 主动通知：存 webhook URL 的 `.sandcastle/.env` 变量名（文件里为空时取宿主机同名环境变量；没配 URL 时什么都不发——URL 不进配置文件、日志和评论，沙箱 env 里清空，agent 拿不到）。票被打 stuck（宿主机打的，或 prep 会话打的——会话结束后查一次标签才知道）、留 PR 给人、main 兜底完整测试失败（main-broken）、一个阶段的全部档案撞上限额进入等待（和限额评论一起去重：同一次等待只发一条，重启后不重复）、prep 撞限额（每个进程一条）、`run` 异常退出时 POST 一条 JSON（`{ text, event, issue, url, reason }`；`text` 是给人看的一行，Slack incoming webhook 直接认；飞书、企业微信、钉钉的群机器人要各自的格式，不兼容）；发送失败只打一行警告，不阻塞运行。异常退出那条在进程退出前发（最多等 10 秒），只认默认变量名 `SANDPIPE_NOTIFY_WEBHOOK`：cli 不加载项目配置，自定义了 `notify.env` 的项目异常退出时收不到。`sandpipe doctor` 把它列入检查：配了 URL 时发一次请求看能不能连上（连不上只警告），`sandpipe doctor --notify-test` 改发一条 `test` 事件的测试消息（`--fix` 时不发） |
+| `notify.env` | `SANDPIPE_NOTIFY_WEBHOOK` | 主动通知：存 webhook URL 的 `.sandcastle/.env` 变量名（文件里为空时取宿主机同名环境变量；没配 URL 时什么都不发——URL 不进配置文件、日志和评论，沙箱 env 里清空，agent 拿不到）。票被打 stuck（宿主机打的，或 prep 会话打的——会话结束后查一次标签才知道）、留 PR 给人、main 兜底完整测试失败（main-broken）、一个阶段的全部档案撞上限额进入等待（和限额评论一起去重：同一次等待只发一条，重启后不重复）、prep 撞限额（每个进程一条）、`run` 异常退出时 POST 一条 JSON（`{ text, event, issue, url, reason }`；`text` 是给人看的一行，Slack incoming webhook 直接认；飞书、企业微信、钉钉的群机器人要各自的格式，不兼容）；发送失败（抛错、5xx、429）等 5 秒重试一次，仍失败才打一行警告，不阻塞运行（4xx 不重试；异常退出那条和 `doctor --notify-test` 也不重试）。异常退出那条在进程退出前发（最多等 10 秒），只认默认变量名 `SANDPIPE_NOTIFY_WEBHOOK`：cli 不加载项目配置，自定义了 `notify.env` 的项目异常退出时收不到。`sandpipe doctor` 把它列入检查：配了 URL 时发一次请求看能不能连上（连不上只警告），`sandpipe doctor --notify-test` 改发一条 `test` 事件的测试消息（`--fix` 时不发） |
 | `integrity` | 无 | 合并前的一致性检查：`{ name, command(head, baseRef), broken(baseRef) }`。比如检查数据库迁移链有没有分叉：rebase 没有文本冲突，迁移链也可能断 |
 | `appendOnlyFiles` | `[]` | 只追加的索引文件。几张票同时追加不算改同一个文件，可以并行 |
 | `acceptancePrep(branch)` | 无 | 改了页面的票，PR「验收说明」最前面固定的准备步骤 |
